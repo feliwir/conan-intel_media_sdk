@@ -10,7 +10,8 @@ class IntelMediaSDKConan(ConanFile):
     name = "intel_media_sdk"
     version = "2017R1"
     url = "https://github.com/bincrafters/conan-intel_media_sdk"
-    description = "Keep it short"
+    description = "Intel® Media SDK provides an API to access hardware-accelerated video decode, encode and " \
+                  "filtering on Intel® platforms with integrated graphics."
     license = "MIT"
     exports = ["LICENSE.md"]
     settings = {"os": ["Windows"], "arch": ["x86", "x86_64"], "compiler": ["Visual Studio"]}
