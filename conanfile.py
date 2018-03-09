@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
-from conans import ConanFile
+from conans import ConanFile, tools
 import os
 
 
@@ -13,7 +13,7 @@ class IntelMediaSDKConan(ConanFile):
     description = "Keep it short"
     license = "MIT"
     exports = ["LICENSE.md"]
-    settings = {"os": ["Windows"], "arch": ["x86", "x86_64"]}
+    settings = {"os": ["Windows"], "arch": ["x86", "x86_64"], "compiler": ["Visual Studio"]}
     source_subfolder = 'intel_media_sdk'
 
     def source(self):
@@ -38,6 +38,13 @@ class IntelMediaSDKConan(ConanFile):
             self.copy(pattern="*.lib", dst="lib", src=os.path.join(self.source_subfolder, 'lib', 'x64'),
                       keep_path=True)
 
+        with tools.chdir(os.path.join(self.package_folder, 'lib')):
+            if int(str(self.settings.compiler.version)) >= 14:
+                os.unlink('libmfx.lib')
+                os.rename('libmfx_vs2015.lib', 'libmfx.lib')
+            else:
+                os.unlink('libmfx_vs2015.lib')
+
     def package_info(self):
-        self.cpp_info.libs = ['libmfx_vs2015']
+        self.cpp_info.libs = ['libmfx']
         self.cpp_info.includedirs.append(os.path.join(self.package_folder, 'include', 'mfx'))
