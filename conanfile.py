@@ -2,76 +2,42 @@
 # -*- coding: utf-8 -*-
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
-from conans import ConanFile, CMake, tools
+from conans import ConanFile
 import os
 
 
-class LibnameConan(ConanFile):
-    name = "libname"
-    version = "0.0.0"
-    url = "https://github.com/bincrafters/conan-libname"
+class IntelMediaSDKConan(ConanFile):
+    name = "intel_media_sdk"
+    version = "2017R1"
+    url = "https://github.com/bincrafters/conan-intel_media_sdk"
     description = "Keep it short"
-
-    # Indicates License type of the packaged library
     license = "MIT"
-
-    # Packages the license for the conanfile.py
     exports = ["LICENSE.md"]
-
-    # Remove following lines if the target lib does not use cmake.
-    exports_sources = ["CMakeLists.txt"]
-    generators = "cmake"
-
-    # Options may need to change depending on the packaged library.
-    settings = "os", "arch", "compiler", "build_type"
-    options = {"shared": [True, False], "fPIC": [True, False]}
-    default_options = "shared=False", "fPIC=True"
-
-    # Custom attributes for Bincrafters recipe conventions
-    source_subfolder = "source_subfolder"
-    build_subfolder = "build_subfolder"
-
-    # Use version ranges for dependencies unless there's a reason not to
-    # Update 2/9/18 - Per conan team, ranges are slow to resolve.
-    # So, with libs like zlib, updates are very rare, so we now use static version
-
-    requires = (
-        "OpenSSL/[>=1.0.2l]@conan/stable",
-        "zlib/1.2.11@conan/stable"
-    )
-
-    def configure(self):
-        if self.settings.os == 'Windows':
-            del self.options.fPIC
+    settings = {"os": ["Windows"], "arch": ["x86", "x86_64"]}
+    source_subfolder = 'intel_media_sdk'
 
     def source(self):
-        source_url = "https://github.com/libauthor/libname"
-        tools.get("{0}/archive/v{1}.tar.gz".format(source_url, self.version))
-        extracted_dir = self.name + "-" + self.version
-
-        #Rename to "source_subfolder" is a convention to simplify later steps
-        os.rename(extracted_dir, self.source_subfolder)
-
-    def build(self):
-        cmake = CMake(self)
-        cmake.definitions["BUILD_TESTS"] = False # example
-        if self.settings.os != 'Windows':
-            cmake.definitions['CMAKE_POSITION_INDEPENDENT_CODE'] = self.options.fPIC
-        cmake.configure(build_folder=self.build_subfolder)
-        cmake.build()
-        cmake.install()
+        source_url = "https://github.com/SSE4/intel_media_sdk.git"
+        self.run('git clone %s --depth 1 --branch %s' % (source_url, self.version))
 
     def package(self):
-        # If the CMakeLists.txt has a proper install method, the steps below may be redundant
-        # If so, you can replace all the steps below with the word "pass"
-        include_folder = os.path.join(self.source_subfolder, "include")
-        self.copy(pattern="LICENSE", dst="license", src=self.source_subfolder)
-        self.copy(pattern="*", dst="include", src=include_folder)
-        self.copy(pattern="*.dll", dst="bin", keep_path=False)
-        self.copy(pattern="*.lib", dst="lib", keep_path=False)
-        self.copy(pattern="*.a", dst="lib", keep_path=False)
-        self.copy(pattern="*.so*", dst="lib", keep_path=False)
-        self.copy(pattern="*.dylib", dst="lib", keep_path=False)
+        self.copy(pattern="Media_SDK_EULA.rtf", dst="licenses", src=self.source_subfolder)
+        self.copy(pattern="mediasdk_release_notes.pdf", dst="licenses", src=self.source_subfolder)
+        self.copy(pattern="redist.txt", dst="licenses", src=self.source_subfolder)
+        self.copy(pattern="redist.txt", dst="licenses", src=self.source_subfolder)
+
+        self.copy(pattern="*.h", dst=os.path.join('include', 'mfx'), src=os.path.join(self.source_subfolder, 'include'))
+        if self.settings.arch == 'x86':
+            self.copy(pattern="*.lib", dst="lib", src=os.path.join(self.source_subfolder, 'lib', 'Win32'),
+                      keep_path=True)
+            self.copy(pattern="*.dll", dst="bin", src=os.path.join(self.source_subfolder, 'bin', 'Win32'),
+                      keep_path=True)
+        elif self.settings.arch == 'x86_64':
+            self.copy(pattern="*.dll", dst="bin", src=os.path.join(self.source_subfolder, 'bin', 'Win32'),
+                      keep_path=True)
+            self.copy(pattern="*.lib", dst="lib", src=os.path.join(self.source_subfolder, 'lib', 'x64'),
+                      keep_path=True)
 
     def package_info(self):
-        self.cpp_info.libs = tools.collect_libs(self)
+        self.cpp_info.libs = ['libmfx_vs2015']
+        self.cpp_info.includedirs.append(os.path.join(self.package_folder, 'include', 'mfx'))
