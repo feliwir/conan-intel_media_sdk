@@ -49,3 +49,8 @@ class IntelMediaSDKConan(ConanFile):
     def package_info(self):
         self.cpp_info.libs = ['libmfx']
         self.cpp_info.includedirs.append(os.path.join(self.package_folder, 'include', 'mfx'))
+        if int(str(self.settings.compiler.version)) < 14:
+            if self.settings.compiler.runtime != 'MT':
+                # libmfx.lib unfortunately has /DEFAULTLIB:LIBCMT, there is nothing better to be done
+                self.cpp_info.exelinkflags.append("-NODEFAULTLIB:LIBCMT")
+                self.cpp_info.sharedlinkflags = self.cpp_info.exelinkflags
