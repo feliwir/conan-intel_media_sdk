@@ -2,67 +2,55 @@
 # -*- coding: utf-8 -*-
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
-from conans import ConanFile, tools
+from conans import ConanFile, tools, CMake
 import os
 
 
 class IntelMediaSDKConan(ConanFile):
-    name = "intel_media_sdk"
-    version = "2018R2"
+    name = "intel-mediasdk"
+    version = "19.1.0"
     url = "https://github.com/bincrafters/conan-intel_media_sdk"
     description = "Intel® Media SDK provides an API to access hardware-accelerated video decode, encode and " \
                   "filtering on Intel® platforms with integrated graphics."
+    author = "Bincrafters <bincrafters@gmail.com>"
+    topics = {"video","decoding","acceleration","intel"}
+
     license = "MIT"
+    homepage = "https://software.intel.com/en-us/media-sdk"
     exports = ["LICENSE.md"]
-    settings = {"os": ["Windows"], "arch": ["x86", "x86_64"], "compiler": ["Visual Studio"]}
+    exports_sources = ["CMakeLists.txt"]
+    generators = "cmake"
+
+    settings = {"os": ["Windows", "Linux"], "arch": ["x86", "x86_64"]}
+    options = {"shared": [True, False], "fPIC": [True, False]}
+    default_options = {'shared': False, 'fPIC': True}
+
+    _source_subfolder = "source_subfolder"
+
+    def config_options(self):
+        if self.settings.os == "Windows":
+            self.options.remove("fPIC")
 
     def source(self):
-        source_url = "http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/13618/MSDK2018R2.exe"
-        tools.download(source_url, 'MSDK2018R2.exe')
+        source_url = "https://github.com/Intel-Media-SDK/MediaSDK/archive/"
+        tools.get("{0}/{1}-{2}.tar.gz".format(source_url, self.name, self.version),
+                  sha256="fbb617112bfdc6602a621f97a480c71dc272a4a433c66a3ce3f5c3695e7e91be")
+        extracted_dir = "MediaSDK-" + self.name + "-" + self.version
+        os.rename(extracted_dir, self._source_subfolder)
+
+    def _configure_cmake(self):
+        cmake = CMake(self)
+        cmake.configure()
+        return cmake
 
     def build(self):
-        for action in ['remove', 'install']:
-            self.run('MSDK2018R2.exe '
-                     '%s '
-                     '--silent '
-                     '--installdir=%s '
-                     '--eval '
-                     '--eula=accept '
-                     '--output=out.txt '
-                     '--send-data=no '
-                     '--update=always' % (action, os.getcwd()))
+        cmake = self._configure_cmake()
+        cmake.build()
 
     def package(self):
-        install_dir = os.path.join('Intel(R) Media SDK 2018 R2', 'Software Development Kit')
-
-        self.copy(pattern="Media_SDK_EULA.rtf", dst="licenses", src=install_dir)
-        self.copy(pattern="mediasdk_release_notes.pdf", dst="licenses", src=install_dir)
-        self.copy(pattern="redist.txt", dst="licenses", src=install_dir)
-        self.copy(pattern="redist.txt", dst="licenses", src=install_dir)
-
-        self.copy(pattern="*.h", dst=os.path.join('include', 'mfx'), src=os.path.join(install_dir, 'include'))
-        if self.settings.arch == 'x86':
-            self.copy(pattern="*.lib", dst="lib", src=os.path.join(install_dir, 'lib', 'Win32'),
-                      keep_path=True)
-            self.copy(pattern="*.dll", dst="bin", src=os.path.join(install_dir, 'bin', 'Win32'),
-                      keep_path=True)
-        elif self.settings.arch == 'x86_64':
-            self.copy(pattern="*.dll", dst="bin", src=os.path.join(install_dir, 'bin', 'Win32'),
-                      keep_path=True)
-            self.copy(pattern="*.lib", dst="lib", src=os.path.join(install_dir, 'lib', 'x64'),
-                      keep_path=True)
-
-        with tools.chdir(os.path.join(self.package_folder, 'lib')):
-            if int(str(self.settings.compiler.version)) >= 14:
-                os.unlink('libmfx.lib')
-                os.rename('libmfx_vs2015.lib', 'libmfx.lib')
-            else:
-                os.unlink('libmfx_vs2015.lib')
+        self.copy("COPYING", dst="licenses", src=self._source_subfolder, keep_path=False)
+        cmake = self._configure_cmake()
+        cmake.install()
 
     def package_info(self):
-        self.cpp_info.libs = ['libmfx']
-        self.cpp_info.includedirs.append(os.path.join(self.package_folder, 'include', 'mfx'))
-        if self.settings.compiler.runtime != 'MT':
-            # libmfx.lib unfortunately has /DEFAULTLIB:LIBCMT, there is nothing better to be done
-            self.cpp_info.exelinkflags.append("-NODEFAULTLIB:LIBCMT")
-            self.cpp_info.sharedlinkflags = self.cpp_info.exelinkflags
+        self.cpp_info.libs = tools.collect_libs(self)
