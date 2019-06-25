@@ -3,12 +3,13 @@
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
 from conans import ConanFile, tools
+from conans.model.version import Version
 import os
 
 
 class IntelMediaSDKConan(ConanFile):
     name = "intel_media_sdk"
-    version = "2018R2"
+    version = "2018R2_1"
     url = "https://github.com/bincrafters/conan-intel_media_sdk"
     description = "Intel® Media SDK provides an API to access hardware-accelerated video decode, encode and " \
                   "filtering on Intel® platforms with integrated graphics."
@@ -17,12 +18,12 @@ class IntelMediaSDKConan(ConanFile):
     settings = {"os": ["Windows"], "arch": ["x86", "x86_64"], "compiler": ["Visual Studio"]}
 
     def source(self):
-        source_url = "http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/13618/MSDK2018R2.exe"
-        tools.download(source_url, 'MSDK2018R2.exe')
+        source_url = "http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/15303/MediaSDK2018R2_1.exe"
+        tools.download(source_url, 'MediaSDK2018R2_1.exe')
 
     def build(self):
         for action in ['remove', 'install']:
-            self.run('MSDK2018R2.exe '
+            self.run('MediaSDK2018R2_1.exe '
                      '%s '
                      '--silent '
                      '--installdir=%s '
@@ -66,3 +67,8 @@ class IntelMediaSDKConan(ConanFile):
             # libmfx.lib unfortunately has /DEFAULTLIB:LIBCMT, there is nothing better to be done
             self.cpp_info.exelinkflags.append("-NODEFAULTLIB:LIBCMT")
             self.cpp_info.sharedlinkflags = self.cpp_info.exelinkflags
+
+    def package_id(self):
+        v = Version(str(self.settings.compiler.version))
+        if self.settings.compiler == "Visual Studio" and (v >= "14"):
+            self.info.settings.compiler.version = "VS version >= VS2015"
