@@ -32,6 +32,11 @@ class IntelMediaSDKConan(ConanFile):
         if self.settings.os == "Windows":
             self.options.remove("fPIC")
 
+    def configure(self):
+        del self.settings.compiler.libcxx
+        if self.settings.compiler == 'Visual Studio':
+            del self.options.fPIC
+            
     def source(self):
         source_url = "https://github.com/Intel-Media-SDK/MediaSDK/archive/"
         tools.get("{0}/{1}-{2}.tar.gz".format(source_url, self.name, self.version),
@@ -51,7 +56,7 @@ class IntelMediaSDKConan(ConanFile):
     def package(self):
         self.copy("COPYING", dst="licenses", src=self._source_subfolder)
         cmake = self._configure_cmake()
-        cmake.install()
+        cmake.install(build_dir=self._build_subfolder)
 
     def package_info(self):
         self.cpp_info.libs = tools.collect_libs(self)
