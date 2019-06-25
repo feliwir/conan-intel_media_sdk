@@ -26,6 +26,7 @@ class IntelMediaSDKConan(ConanFile):
     default_options = {'shared': False, 'fPIC': True}
 
     _source_subfolder = "source_subfolder"
+    _build_subfolder = "build_subfolder"
 
     def config_options(self):
         if self.settings.os == "Windows":
@@ -40,7 +41,7 @@ class IntelMediaSDKConan(ConanFile):
 
     def _configure_cmake(self):
         cmake = CMake(self)
-        cmake.configure()
+        cmake.configure(build_folder=self._build_subfolder)
         return cmake
 
     def build(self):
@@ -48,7 +49,7 @@ class IntelMediaSDKConan(ConanFile):
         cmake.build()
 
     def package(self):
-        self.copy("COPYING", dst="licenses", src=self._source_subfolder, keep_path=False)
+        self.copy("COPYING", dst="licenses", src=self._source_subfolder)
         cmake = self._configure_cmake()
         cmake.install()
 
