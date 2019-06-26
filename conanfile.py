@@ -16,7 +16,7 @@ class IntelMediaSDKConan(ConanFile):
     license = "MIT"
     exports = ["LICENSE.md"]
     settings = {"os": ["Windows"], "arch": ["x86", "x86_64"], "compiler": ["Visual Studio"]}
-    _exe_name = 'MediaSDK%s.exe' % self.version
+    _exe_name = 'MediaSDK%s.exe' % version
 
     def source(self):
         source_url = "http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/15303/%s" % self._exe_name
